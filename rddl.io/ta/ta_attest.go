@@ -207,7 +207,7 @@ func main() {
 	if err != nil || planetmint_address == "" || planetmint_go == "" {
 		panic("couldn't read configuration")
 	}
-	fmt.Printf("global config %s", planetmint_address)
+	fmt.Printf("global config %s\n", planetmint_address)
 	loadFirmwares(config)
 	startWebService(config)
 }
