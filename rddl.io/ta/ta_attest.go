@@ -200,7 +200,7 @@ func loadFirmwares(config *viper.Viper) {
 }
 
 func main() {
-	config, err := LoadConfig("/home/jeckel/develop/rddl/ta_attest")
+	config, err := LoadConfig("./")
 
 	planetmint_go = config.GetString("PLANETMINT_GO")
 	planetmint_address = config.GetString("PLANETMINT_ACTOR")
