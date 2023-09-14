@@ -15,6 +15,59 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
+var planetmint_address string = "plmnt15xuq0yfxtd70l7jzr5hg722sxzcqqdcr8ptpl5"
+
+func toInt(bytes []byte, offset int) int {
+	result := 0
+	for i := 3; i > -1; i-- {
+		result = result << 8
+		result += int(bytes[offset+i])
+	}
+	return result
+}
+
+func xorDataBlob(binary []byte, offset int, length int, is1stSegment bool, checksum byte) byte {
+
+	//fmt.Printf("Blob Size is: %02x %d\n", length, length)
+	var initializer int = 0
+	if is1stSegment {
+		initializer = 1
+		checksum = binary[offset]
+	}
+
+	for i := initializer; i < length; i++ {
+		checksum = checksum ^ binary[offset+i]
+	}
+	fmt.Printf("Blob Checksum: %02x\n", checksum)
+	return checksum
+}
+
+func xorSegments(binary []byte) byte {
+	// init variables
+	size := len(binary)
+	numSegments := int(binary[1])
+	headersize := 8
+	ext_headersize := 16
+	offset := headersize + ext_headersize // that's where the data segments start
+
+	var computed_checksum byte = byte(0)
+
+	for i := 0; i < numSegments; i++ {
+		fmt.Printf("Segment descriptior is at: %x\n", offset)
+		offset += 4 // the segments load address
+		length := toInt(binary, offset)
+		offset += 4 // the read integer
+		fmt.Printf("Blob length: %02x\n", length)
+		// xor from here to offset + length for length bytes
+		computed_checksum = xorDataBlob(binary, offset, length, i == 0, computed_checksum)
+		offset += length
+	}
+	fmt.Printf(" Size : %0x, Last Data byte : %0x\n", size, offset)
+	computed_checksum = computed_checksum ^ 0xEF
+
+	return computed_checksum
+}
+
 func randomHex(n int) (string, error) {
 	bytes := make([]byte, n)
 	if _, err := rand.Read(bytes); err != nil {
@@ -22,11 +75,14 @@ func randomHex(n int) (string, error) {
 	}
 	return hex.EncodeToString(bytes), nil
 }
+
 func getRandomPrivateKey(n int) (string, error) {
 	return randomHex(n)
 }
 
-var reference_content []byte
+var firmware_esp32 []byte
+var firmware_esp32c3 []byte
+
 var counter int = 0
 var searchBytes []byte = []byte("RDDLRDDLRDDLRDDLRDDLRDDLRDDLRDDL")
 
@@ -34,7 +90,9 @@ func attestTAPublicKey(publicKey *secp256k1.PublicKey) {
 
 	var pub_hex_string string = hex.EncodeToString(publicKey.SerializeCompressed())
 	var ta string = "'{\"pubkey\": \"" + pub_hex_string + "\"}'"
-	cmd := exec.Command("bash", "-c", "/home/jeckel/go/bin/planetmint-god tx machine register-trust-anchor "+ta+" --from cosmos10hyme8ggv30q6mru7zfeleryac4vm3xs26n0ft -y")
+	var command_str string = "/home/jeckel/go/bin/planetmint-god tx machine register-trust-anchor " + ta + " --from " + planetmint_address + " -y"
+	fmt.Println("Command: " + command_str)
+	cmd := exec.Command("bash", "-c", command_str)
 	out, err := cmd.Output()
 	if err != nil {
 		// if there was any error, print it here
@@ -44,15 +102,48 @@ func attestTAPublicKey(publicKey *secp256k1.PublicKey) {
 	fmt.Println("Output: ", string(out))
 }
 
-// getAlbums responds with the list of all albums as JSON.
-func getFirmware(c *gin.Context) {
-	privKey, pubKey := generateNewKeyPair()
+func computeAndSetFirmwareChecksum(patched_binary []byte) {
+	binary_checksum := xorSegments(patched_binary)
+	binary_size := len(patched_binary)
+	patched_binary[binary_size-1] = binary_checksum
+}
 
-	var patched_binary = bytes.Replace(reference_content, searchBytes, privKey.Serialize(), 1)
-	c.Header("Content-Disposition", "attachment; filename=firmware.patched")
+func getFirmware(c *gin.Context) {
+	mcu := c.Param("mcu")
+	privKey, pubKey := generateNewKeyPair()
+	var filename string
+	var fileobj []byte
+	if mcu == "esp32" {
+		fileobj = firmware_esp32
+		filename = "tasmota32-rddl.bin"
+	} else if mcu == "esp32c3" {
+		fileobj = firmware_esp32c3
+		filename = "tasmota32c3-rddl.bin"
+	} else {
+		c.String(404, "Resource not found")
+		return
+	}
+
+	var patched_binary = bytes.Replace(fileobj, searchBytes, privKey.Serialize(), 1)
+	computeAndSetFirmwareChecksum(patched_binary)
+
+	c.Header("Content-Disposition", "attachment; filename="+filename)
 	c.Data(http.StatusOK, "application/octet-stream", patched_binary)
+
 	fmt.Println(" pub key 1: ", pubKey.SerializeCompressed())
 	attestTAPublicKey(pubKey)
+}
+
+func verifyBinaryIntegrity(binary []byte) bool {
+	binary_size := len(binary)
+	binary_checksum := xorSegments(binary)
+	if binary[binary_size-1] == binary_checksum {
+		fmt.Printf("The checksum is: %x\n", binary_checksum)
+		return true
+	} else {
+		fmt.Printf("Attention: The files checksum is: %x, the computed checksum is: %x\n", binary[binary_size-1], binary_checksum)
+		return false
+	}
 }
 
 func generateNewKeyPair() (*secp256k1.PrivateKey, *secp256k1.PublicKey) {
@@ -67,59 +158,31 @@ func generateNewKeyPair() (*secp256k1.PrivateKey, *secp256k1.PublicKey) {
 	return privateKey, publicKey
 }
 
-func main() {
-	// pk_source, _ := getRandomPrivateKey(32)
+func startWebService() {
+	router := gin.Default()
+	router.GET("/firmware/:mcu", getFirmware)
+	router.Run("localhost:8080")
+}
 
-	// privateKeyBytes, err := hex.DecodeString(pk_source)
-	// if err != nil {
-	// 	log.Fatalf("Failed to decode private key: %v", err)
-	// }
-
-	// // Initialize a secp256k1 private key object.
-	// privateKey, publicKey := btcec.PrivKeyFromBytes(privateKeyBytes)
-
-	// // Print the public key for verification.
-	// fmt.Printf("Public Key: %x\n", publicKey.SerializeCompressed())
-
-	// // Replace this with the digest you want to sign.
-	// digest := []byte("Your digest to be signed")
-
-	// // Sign the digest using the private key.
-	// //r, signature, err := ecdsa.Sign(privateKey, digest)
-	// signature := ecdsa.Sign(privateKey, digest)
-	// if err != nil {
-	// 	log.Fatalf("Failed to sign digest: %v", err)
-	// }
-
-	// // Serialize the signature in a format you prefer.
-	// signatureBytes := signature.Serialize()
-
-	// fmt.Printf("Signature: %x\n", signatureBytes)
-	// ser := privateKey.Serialize()
-	// //obj, err := hex.DecodeString(ser)
-	// fmt.Printf("Private Key: %x\n", privateKey.Serialize())
-	// fmt.Printf("Private Key: %x\n", ser)
-
-	// fmt.Printf("Public Key (compressed): %x\n", publicKey.SerializeCompressed())
-	// fmt.Printf("Public Key (uncompressed): %x\n", publicKey.SerializeUncompressed())
-
-	content, err := os.ReadFile("./tasmota32-rddl.bin")
+func loadFirmware(filename string) []byte {
+	content, err := os.ReadFile(filename)
 	if err != nil {
 		panic("could not read firmware")
 	}
-	reference_content = content
-	// var ta string = "'{\"pubkey\": \"0254ee8462dd6a8c4ef7bdc21ac92bd222aa53e4284f9d743f8bd196b899f0ada5\"}'"
-	// cmd := exec.Command("bash", "-c", "/home/jeckel/go/bin/planetmint-god tx machine register-trust-anchor "+ta+" --from cosmos10hyme8ggv30q6mru7zfeleryac4vm3xs26n0ft -y")
-	// out, err := cmd.Output()
-	// if err != nil {
-	// //if there was any error, print it here
-	// fmt.Println("could not run command: ", err)
-	// }
-	// //otherwise, print the output from running the command
-	// fmt.Println("Output: ", string(out))
 
-	router := gin.Default()
-	router.GET("/firmware", getFirmware)
+	if !verifyBinaryIntegrity(content) {
+		panic("given firmware integrity check failed")
+	}
 
-	router.Run("localhost:8080")
+	return content
+}
+
+func loadFirmwares() {
+	firmware_esp32c3 = loadFirmware("/home/jeckel/develop/rddl/ta_attest/tasmota32c3-rddl.bin")
+	firmware_esp32 = loadFirmware("/home/jeckel/develop/rddl/ta_attest/tasmota32-rddl.bin")
+}
+
+func main() {
+	loadFirmwares()
+	startWebService()
 }
