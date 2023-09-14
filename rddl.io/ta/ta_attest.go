@@ -13,9 +13,26 @@ import (
 	btcec "github.com/btcsuite/btcd/btcec/v2"
 	"github.com/decred/dcrd/dcrec/secp256k1/v4"
 	"github.com/gin-gonic/gin"
+	"github.com/spf13/viper"
 )
 
-var planetmint_address string = "plmnt15xuq0yfxtd70l7jzr5hg722sxzcqqdcr8ptpl5"
+func LoadConfig(path string) (v *viper.Viper, err error) {
+	v = viper.New()
+	v.AddConfigPath(path)
+	v.SetConfigName("app")
+	v.SetConfigType("env")
+
+	v.AutomaticEnv()
+
+	err = v.ReadInConfig()
+	if err != nil {
+		return
+	}
+	return
+}
+
+var planetmint_address string
+var planetmint_go string
 
 func toInt(bytes []byte, offset int) int {
 	result := 0
@@ -90,7 +107,7 @@ func attestTAPublicKey(publicKey *secp256k1.PublicKey) {
 
 	var pub_hex_string string = hex.EncodeToString(publicKey.SerializeCompressed())
 	var ta string = "'{\"pubkey\": \"" + pub_hex_string + "\"}'"
-	var command_str string = "/home/jeckel/go/bin/planetmint-god tx machine register-trust-anchor " + ta + " --from " + planetmint_address + " -y"
+	var command_str string = planetmint_go + " tx machine register-trust-anchor " + ta + " --from " + planetmint_address + " -y"
 	fmt.Println("Command: " + command_str)
 	cmd := exec.Command("bash", "-c", command_str)
 	out, err := cmd.Output()
@@ -177,12 +194,23 @@ func loadFirmware(filename string) []byte {
 	return content
 }
 
-func loadFirmwares() {
-	firmware_esp32c3 = loadFirmware("/home/jeckel/develop/rddl/ta_attest/tasmota32c3-rddl.bin")
-	firmware_esp32 = loadFirmware("/home/jeckel/develop/rddl/ta_attest/tasmota32-rddl.bin")
+func loadFirmwares(config *viper.Viper) {
+	esp32 := config.GetString("FIRMWARE_ESP32")
+	esp32c3 := config.GetString("FIRMWARE_ESP32C3")
+
+	firmware_esp32 = loadFirmware(esp32)
+	firmware_esp32c3 = loadFirmware(esp32c3)
 }
 
 func main() {
-	loadFirmwares()
+	config, err := LoadConfig("/home/jeckel/develop/rddl/ta_attest")
+
+	planetmint_go = config.GetString("PLANETMINT_GO")
+	planetmint_address = config.GetString("PLANETMINT_ACTOR")
+	if err != nil || planetmint_address == "" || planetmint_go == "" {
+		panic("couldn't read configuration")
+	}
+	fmt.Printf("global config %s", planetmint_address)
+	loadFirmwares(config)
 	startWebService()
 }
