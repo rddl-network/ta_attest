@@ -45,7 +45,6 @@ func toInt(bytes []byte, offset int) int {
 
 func xorDataBlob(binary []byte, offset int, length int, is1stSegment bool, checksum byte) byte {
 
-	//fmt.Printf("Blob Size is: %02x %d\n", length, length)
 	var initializer int = 0
 	if is1stSegment {
 		initializer = 1
@@ -55,13 +54,11 @@ func xorDataBlob(binary []byte, offset int, length int, is1stSegment bool, check
 	for i := initializer; i < length; i++ {
 		checksum = checksum ^ binary[offset+i]
 	}
-	fmt.Printf("Blob Checksum: %02x\n", checksum)
 	return checksum
 }
 
 func xorSegments(binary []byte) byte {
 	// init variables
-	size := len(binary)
 	numSegments := int(binary[1])
 	headersize := 8
 	ext_headersize := 16
@@ -70,16 +67,13 @@ func xorSegments(binary []byte) byte {
 	var computed_checksum byte = byte(0)
 
 	for i := 0; i < numSegments; i++ {
-		fmt.Printf("Segment descriptior is at: %x\n", offset)
 		offset += 4 // the segments load address
 		length := toInt(binary, offset)
 		offset += 4 // the read integer
-		fmt.Printf("Blob length: %02x\n", length)
 		// xor from here to offset + length for length bytes
 		computed_checksum = xorDataBlob(binary, offset, length, i == 0, computed_checksum)
 		offset += length
 	}
-	fmt.Printf(" Size : %0x, Last Data byte : %0x\n", size, offset)
 	computed_checksum = computed_checksum ^ 0xEF
 
 	return computed_checksum
@@ -137,7 +131,7 @@ func getFirmware(c *gin.Context) {
 		fileobj = firmware_esp32c3
 		filename = "tasmota32c3-rddl.bin"
 	} else {
-		c.String(404, "Resource not found")
+		c.String(404, "Resource not found, Firmware not supported")
 		return
 	}
 
@@ -155,10 +149,10 @@ func verifyBinaryIntegrity(binary []byte) bool {
 	binary_size := len(binary)
 	binary_checksum := xorSegments(binary)
 	if binary[binary_size-1] == binary_checksum {
-		fmt.Printf("The checksum is: %x\n", binary_checksum)
+		fmt.Printf("The integrity of the file got verified. The checksum is: %x\n", binary_checksum)
 		return true
 	} else {
-		fmt.Printf("Attention: The files checksum is: %x, the computed checksum is: %x\n", binary[binary_size-1], binary_checksum)
+		fmt.Printf("Attention: File integrity check FAILED. The files checksum is: %x, the computed checksum is: %x\n", binary[binary_size-1], binary_checksum)
 		return false
 	}
 }
@@ -175,10 +169,13 @@ func generateNewKeyPair() (*secp256k1.PrivateKey, *secp256k1.PublicKey) {
 	return privateKey, publicKey
 }
 
-func startWebService() {
+func startWebService(config *viper.Viper) {
 	router := gin.Default()
 	router.GET("/firmware/:mcu", getFirmware)
-	router.Run("localhost:8080")
+
+	bind_address := config.GetString("SERVICE_BIND")
+	service_port := config.GetString("SERVICE_PORT")
+	router.Run(bind_address + ":" + service_port)
 }
 
 func loadFirmware(filename string) []byte {
@@ -212,5 +209,5 @@ func main() {
 	}
 	fmt.Printf("global config %s", planetmint_address)
 	loadFirmwares(config)
-	startWebService()
+	startWebService(config)
 }
