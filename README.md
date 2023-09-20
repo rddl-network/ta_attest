@@ -24,6 +24,7 @@ The service needs to be configured via the ```./app.env``` file or environment v
 ```
 PLANETMINT_GO=planetmint-god
 PLANETMINT_ACTOR=plmnt15xuq0yfxtd70l7jzr5hg722sxzcqqdcr8ptpl5
+PLANETMINT_KEYRING=                                           #is optional
 FIRMWARE_ESP32=./tasmota32-rddl.bin
 FIRMWARE_ESP32C3=./tasmota32c3-rddl.bin
 SERIVE_PORT=8080

@@ -33,6 +33,7 @@ func LoadConfig(path string) (v *viper.Viper, err error) {
 
 var planetmint_address string
 var planetmint_go string
+var planetmint_keyring string
 
 func toInt(bytes []byte, offset int) int {
 	result := 0
@@ -102,6 +103,9 @@ func attestTAPublicKey(publicKey *secp256k1.PublicKey) {
 	var pub_hex_string string = hex.EncodeToString(publicKey.SerializeCompressed())
 	var ta string = "'{\"pubkey\": \"" + pub_hex_string + "\"}'"
 	var command_str string = planetmint_go + " tx machine register-trust-anchor " + ta + " --from " + planetmint_address + " -y"
+	if planetmint_keyring != "" {
+		command_str = command_str + " --keyring-backend " + planetmint_keyring
+	}
 	fmt.Println("Command: " + command_str)
 	cmd := exec.Command("bash", "-c", command_str)
 	out, err := cmd.Output()
@@ -207,6 +211,7 @@ func main() {
 	if err != nil || planetmint_address == "" || planetmint_go == "" {
 		panic("couldn't read configuration")
 	}
+	planetmint_keyring = config.GetString("PLANETMINT_KEYRING")
 	fmt.Printf("global config %s\n", planetmint_address)
 	loadFirmwares(config)
 	startWebService(config)
