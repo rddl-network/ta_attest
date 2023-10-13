@@ -94,8 +94,6 @@ func getRandomPrivateKey(n int) (string, error) {
 
 var firmware_esp32 []byte
 var firmware_esp32c3 []byte
-
-var counter int = 0
 var searchBytes []byte = []byte("RDDLRDDLRDDLRDDLRDDLRDDLRDDLRDDL")
 
 func attestTAPublicKeyHex(pub_hex_string string) error {
