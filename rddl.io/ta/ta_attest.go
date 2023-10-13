@@ -190,14 +190,15 @@ func generateNewKeyPair() (*secp256k1.PrivateKey, *secp256k1.PublicKey) {
 	return privateKey, publicKey
 }
 
-func startWebService(config *viper.Viper) {
+func startWebService(config *viper.Viper) error {
 	router := gin.Default()
 	router.GET("/firmware/:mcu", getFirmware)
 	router.POST("/register/:pubkey", postPubKey)
 
 	bind_address := config.GetString("SERVICE_BIND")
 	service_port := config.GetString("SERVICE_PORT")
-	router.Run(bind_address + ":" + service_port)
+	err := router.Run(bind_address + ":" + service_port)
+	return err
 }
 
 func loadFirmware(filename string) []byte {
@@ -232,5 +233,9 @@ func main() {
 	planetmint_keyring = config.GetString("PLANETMINT_KEYRING")
 	fmt.Printf("global config %s\n", planetmint_address)
 	loadFirmwares(config)
-	startWebService(config)
+	err = startWebService(config)
+	if err != nil {
+		fmt.Print(err.Error())
+	}
+
 }
