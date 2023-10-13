@@ -98,9 +98,7 @@ var firmware_esp32c3 []byte
 var counter int = 0
 var searchBytes []byte = []byte("RDDLRDDLRDDLRDDLRDDLRDDLRDDLRDDL")
 
-func attestTAPublicKey(publicKey *secp256k1.PublicKey) {
-
-	var pub_hex_string string = hex.EncodeToString(publicKey.SerializeCompressed())
+func attestTAPublicKeyHex(pub_hex_string string) error {
 	var ta string = "'{\"pubkey\": \"" + pub_hex_string + "\"}'"
 	var command_str string = planetmint_go + " tx machine register-trust-anchor " + ta + " --from " + planetmint_address + " -y"
 	if planetmint_keyring != "" {
@@ -115,6 +113,27 @@ func attestTAPublicKey(publicKey *secp256k1.PublicKey) {
 	}
 	// otherwise, print the output from running the command
 	fmt.Println("Output: ", string(out))
+	return err
+}
+
+func attestTAPublicKey(publicKey *secp256k1.PublicKey) error {
+	var pub_hex_string string = hex.EncodeToString(publicKey.SerializeCompressed())
+	return attestTAPublicKeyHex(pub_hex_string)
+}
+
+func postPubKey(c *gin.Context) {
+	pubkey := c.Param("pubkey")
+	_, err := hex.DecodeString(pubkey)
+	if err == nil {
+		err = attestTAPublicKeyHex(pubkey)
+		if err == nil {
+			c.IndentedJSON(http.StatusOK, pubkey)
+		} else {
+			c.IndentedJSON(http.StatusBadRequest, gin.H{"message": err.Error()})
+		}
+	} else {
+		c.IndentedJSON(http.StatusBadRequest, gin.H{"message": "invalid pubkey"})
+	}
 }
 
 func computeAndSetFirmwareChecksum(patched_binary []byte) {
@@ -146,7 +165,7 @@ func getFirmware(c *gin.Context) {
 	c.Data(http.StatusOK, "application/octet-stream", patched_binary)
 
 	fmt.Println(" pub key 1: ", pubKey.SerializeCompressed())
-	attestTAPublicKey(pubKey)
+	_ = attestTAPublicKey(pubKey)
 }
 
 func verifyBinaryIntegrity(binary []byte) bool {
@@ -176,6 +195,7 @@ func generateNewKeyPair() (*secp256k1.PrivateKey, *secp256k1.PublicKey) {
 func startWebService(config *viper.Viper) {
 	router := gin.Default()
 	router.GET("/firmware/:mcu", getFirmware)
+	router.POST("/register/:pubkey", postPubKey)
 
 	bind_address := config.GetString("SERVICE_BIND")
 	service_port := config.GetString("SERVICE_PORT")
