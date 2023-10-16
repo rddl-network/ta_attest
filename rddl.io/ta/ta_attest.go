@@ -98,7 +98,9 @@ var searchBytes []byte = []byte("RDDLRDDLRDDLRDDLRDDLRDDLRDDLRDDL")
 
 func attestTAPublicKeyHex(pub_hex_string string) error {
 	var ta string = "'{\"pubkey\": \"" + pub_hex_string + "\"}'"
-	var command_str string = planetmint_go + " tx machine register-trust-anchor " + ta + " --from " + planetmint_address + " -y"
+	var command_str string = planetmint_go + " tx machine register-trust-anchor " + ta
+	command_str = command_str + " --from " + planetmint_address
+	command_str = command_str + " -y --gas-prices 0.000005plmnt --gas 200000"
 	if planetmint_keyring != "" {
 		command_str = command_str + " --keyring-backend " + planetmint_keyring
 	}
