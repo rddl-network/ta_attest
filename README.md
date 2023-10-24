@@ -10,13 +10,13 @@ The latest firmware can be found at https://github.com/rddl-network/Tasmota/rele
 The service can be build with
 
 ```
-go build rddl.io/ta/ta_attest.go
+go build -v ./cmd/ta
 ```
 
 ## Execution
-A build service can be executed via ```./ta_attest``` or be run via the following go command without having it previously built
+A build service can be executed via ```./ta``` or be run via the following go command without having it previously built
 ```
-go run rddl.io/ta/ta_attest.go
+go run cmd/ta/main.go
 ```
 
 ## Configuration
