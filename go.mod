@@ -1,4 +1,4 @@
-module rddl.io/ta
+module github.com/rddl-network/ta_attest
 
 go 1.20
 

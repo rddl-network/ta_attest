@@ -31,9 +31,9 @@ func LoadConfig(path string) (v *viper.Viper, err error) {
 	return
 }
 
-var planetmint_address string
-var planetmint_go string
-var planetmint_keyring string
+var planetmintAddress string
+var planetmintGo string
+var planetmintKeyring string
 
 func toInt(bytes []byte, offset int) int {
 	result := 0
@@ -46,7 +46,7 @@ func toInt(bytes []byte, offset int) int {
 
 func xorDataBlob(binary []byte, offset int, length int, is1stSegment bool, checksum byte) byte {
 
-	var initializer int = 0
+	initializer := 0
 	if is1stSegment {
 		initializer = 1
 		checksum = binary[offset]
@@ -62,22 +62,22 @@ func xorSegments(binary []byte) byte {
 	// init variables
 	numSegments := int(binary[1])
 	headersize := 8
-	ext_headersize := 16
-	offset := headersize + ext_headersize // that's where the data segments start
+	extHeadersize := 16
+	offset := headersize + extHeadersize // that's where the data segments start
 
-	var computed_checksum byte = byte(0)
+	computedChecksum := byte(0)
 
 	for i := 0; i < numSegments; i++ {
 		offset += 4 // the segments load address
 		length := toInt(binary, offset)
 		offset += 4 // the read integer
 		// xor from here to offset + length for length bytes
-		computed_checksum = xorDataBlob(binary, offset, length, i == 0, computed_checksum)
+		computedChecksum = xorDataBlob(binary, offset, length, i == 0, computedChecksum)
 		offset += length
 	}
-	computed_checksum = computed_checksum ^ 0xEF
+	computedChecksum = computedChecksum ^ 0xEF
 
-	return computed_checksum
+	return computedChecksum
 }
 
 func randomHex(n int) (string, error) {
@@ -92,20 +92,20 @@ func getRandomPrivateKey(n int) (string, error) {
 	return randomHex(n)
 }
 
-var firmware_esp32 []byte
-var firmware_esp32c3 []byte
-var searchBytes []byte = []byte("RDDLRDDLRDDLRDDLRDDLRDDLRDDLRDDL")
+var firmwareESP32 []byte
+var firmwareESP32C3 []byte
+var searchBytes = []byte("RDDLRDDLRDDLRDDLRDDLRDDLRDDLRDDL")
 
-func attestTAPublicKeyHex(pub_hex_string string) error {
-	var ta string = "'{\"pubkey\": \"" + pub_hex_string + "\"}'"
-	var command_str string = planetmint_go + " tx machine register-trust-anchor " + ta
-	command_str = command_str + " --from " + planetmint_address
-	command_str = command_str + " -y --gas-prices 0.000005plmnt --gas 200000"
-	if planetmint_keyring != "" {
-		command_str = command_str + " --keyring-backend " + planetmint_keyring
+func attestTAPublicKeyHex(pubHexString string) error {
+	ta := "'{\"pubkey\": \"" + pubHexString + "\"}'"
+	commandStr := planetmintGo + " tx machine register-trust-anchor " + ta
+	commandStr = commandStr + " --from " + planetmintAddress
+	commandStr = commandStr + " -y --gas-prices 0.000005plmnt --gas 200000"
+	if planetmintKeyring != "" {
+		commandStr = commandStr + " --keyring-backend " + planetmintKeyring
 	}
-	fmt.Println("Command: " + command_str)
-	cmd := exec.Command("bash", "-c", command_str)
+	fmt.Println("Command: " + commandStr)
+	cmd := exec.Command("bash", "-c", commandStr)
 	out, err := cmd.Output()
 	if err != nil {
 		// if there was any error, print it here
@@ -117,8 +117,8 @@ func attestTAPublicKeyHex(pub_hex_string string) error {
 }
 
 func attestTAPublicKey(publicKey *secp256k1.PublicKey) error {
-	var pub_hex_string string = hex.EncodeToString(publicKey.SerializeCompressed())
-	return attestTAPublicKeyHex(pub_hex_string)
+	pubHexString := hex.EncodeToString(publicKey.SerializeCompressed())
+	return attestTAPublicKeyHex(pubHexString)
 }
 
 func postPubKey(c *gin.Context) {
@@ -136,10 +136,10 @@ func postPubKey(c *gin.Context) {
 	}
 }
 
-func computeAndSetFirmwareChecksum(patched_binary []byte) {
-	binary_checksum := xorSegments(patched_binary)
-	binary_size := len(patched_binary)
-	patched_binary[binary_size-1] = binary_checksum
+func computeAndSetFirmwareChecksum(patchedBinary []byte) {
+	binaryChecksum := xorSegments(patchedBinary)
+	binarySize := len(patchedBinary)
+	patchedBinary[binarySize-1] = binaryChecksum
 }
 
 func getFirmware(c *gin.Context) {
@@ -148,41 +148,40 @@ func getFirmware(c *gin.Context) {
 	var filename string
 	var fileobj []byte
 	if mcu == "esp32" {
-		fileobj = firmware_esp32
+		fileobj = firmwareESP32
 		filename = "tasmota32-rddl.bin"
 	} else if mcu == "esp32c3" {
-		fileobj = firmware_esp32c3
+		fileobj = firmwareESP32C3
 		filename = "tasmota32c3-rddl.bin"
 	} else {
 		c.String(404, "Resource not found, Firmware not supported")
 		return
 	}
 
-	var patched_binary = bytes.Replace(fileobj, searchBytes, privKey.Serialize(), 1)
-	computeAndSetFirmwareChecksum(patched_binary)
+	var patchedBinary = bytes.Replace(fileobj, searchBytes, privKey.Serialize(), 1)
+	computeAndSetFirmwareChecksum(patchedBinary)
 
 	c.Header("Content-Disposition", "attachment; filename="+filename)
-	c.Data(http.StatusOK, "application/octet-stream", patched_binary)
+	c.Data(http.StatusOK, "application/octet-stream", patchedBinary)
 
 	fmt.Println(" pub key 1: ", pubKey.SerializeCompressed())
 	_ = attestTAPublicKey(pubKey)
 }
 
 func verifyBinaryIntegrity(binary []byte) bool {
-	binary_size := len(binary)
-	binary_checksum := xorSegments(binary)
-	if binary[binary_size-1] == binary_checksum {
-		fmt.Printf("The integrity of the file got verified. The checksum is: %x\n", binary_checksum)
+	binarySize := len(binary)
+	binaryChecksum := xorSegments(binary)
+	if binary[binarySize-1] == binaryChecksum {
+		fmt.Printf("The integrity of the file got verified. The checksum is: %x\n", binaryChecksum)
 		return true
-	} else {
-		fmt.Printf("Attention: File integrity check FAILED. The files checksum is: %x, the computed checksum is: %x\n", binary[binary_size-1], binary_checksum)
-		return false
 	}
+	fmt.Printf("Attention: File integrity check FAILED. The files checksum is: %x, the computed checksum is: %x\n", binary[binarySize-1], binaryChecksum)
+	return false
 }
 
 func generateNewKeyPair() (*secp256k1.PrivateKey, *secp256k1.PublicKey) {
-	pk_source, _ := getRandomPrivateKey(32)
-	privateKeyBytes, err := hex.DecodeString(pk_source)
+	pkSource, _ := getRandomPrivateKey(32)
+	privateKeyBytes, err := hex.DecodeString(pkSource)
 	if err != nil {
 		log.Fatalf("Failed to decode private key: %v", err)
 	}
@@ -197,9 +196,9 @@ func startWebService(config *viper.Viper) error {
 	router.GET("/firmware/:mcu", getFirmware)
 	router.POST("/register/:pubkey", postPubKey)
 
-	bind_address := config.GetString("SERVICE_BIND")
-	service_port := config.GetString("SERVICE_PORT")
-	err := router.Run(bind_address + ":" + service_port)
+	bindAddress := config.GetString("SERVICE_BIND")
+	servicePort := config.GetString("SERVICE_PORT")
+	err := router.Run(bindAddress + ":" + servicePort)
 	return err
 }
 
@@ -220,20 +219,20 @@ func loadFirmwares(config *viper.Viper) {
 	esp32 := config.GetString("FIRMWARE_ESP32")
 	esp32c3 := config.GetString("FIRMWARE_ESP32C3")
 
-	firmware_esp32 = loadFirmware(esp32)
-	firmware_esp32c3 = loadFirmware(esp32c3)
+	firmwareESP32 = loadFirmware(esp32)
+	firmwareESP32C3 = loadFirmware(esp32c3)
 }
 
 func main() {
 	config, err := LoadConfig("./")
 
-	planetmint_go = config.GetString("PLANETMINT_GO")
-	planetmint_address = config.GetString("PLANETMINT_ACTOR")
-	if err != nil || planetmint_address == "" || planetmint_go == "" {
+	planetmintGo = config.GetString("PLANETMINT_GO")
+	planetmintAddress = config.GetString("PLANETMINT_ACTOR")
+	if err != nil || planetmintAddress == "" || planetmintGo == "" {
 		panic("couldn't read configuration")
 	}
-	planetmint_keyring = config.GetString("PLANETMINT_KEYRING")
-	fmt.Printf("global config %s\n", planetmint_address)
+	planetmintKeyring = config.GetString("PLANETMINT_KEYRING")
+	fmt.Printf("global config %s\n", planetmintAddress)
 	loadFirmwares(config)
 	err = startWebService(config)
 	if err != nil {
