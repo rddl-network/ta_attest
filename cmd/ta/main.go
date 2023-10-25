@@ -46,7 +46,7 @@ func toInt(bytes []byte, offset int) int {
 
 func xorDataBlob(binary []byte, offset int, length int, is1stSegment bool, checksum byte) byte {
 
-	var initializer int = 0
+	initializer := 0
 	if is1stSegment {
 		initializer = 1
 		checksum = binary[offset]
@@ -65,7 +65,7 @@ func xorSegments(binary []byte) byte {
 	extHeadersize := 16
 	offset := headersize + extHeadersize // that's where the data segments start
 
-	var computedChecksum byte = byte(0)
+	computedChecksum := byte(0)
 
 	for i := 0; i < numSegments; i++ {
 		offset += 4 // the segments load address
@@ -94,11 +94,11 @@ func getRandomPrivateKey(n int) (string, error) {
 
 var firmwareESP32 []byte
 var firmwareESP32C3 []byte
-var searchBytes []byte = []byte("RDDLRDDLRDDLRDDLRDDLRDDLRDDLRDDL")
+var searchBytes = []byte("RDDLRDDLRDDLRDDLRDDLRDDLRDDLRDDL")
 
 func attestTAPublicKeyHex(pubHexString string) error {
-	var ta string = "'{\"pubkey\": \"" + pubHexString + "\"}'"
-	var commandStr string = planetmintGo + " tx machine register-trust-anchor " + ta
+	ta := "'{\"pubkey\": \"" + pubHexString + "\"}'"
+	commandStr := planetmintGo + " tx machine register-trust-anchor " + ta
 	commandStr = commandStr + " --from " + planetmintAddress
 	commandStr = commandStr + " -y --gas-prices 0.000005plmnt --gas 200000"
 	if planetmintKeyring != "" {
@@ -117,7 +117,7 @@ func attestTAPublicKeyHex(pubHexString string) error {
 }
 
 func attestTAPublicKey(publicKey *secp256k1.PublicKey) error {
-	var pubHexString string = hex.EncodeToString(publicKey.SerializeCompressed())
+	pubHexString := hex.EncodeToString(publicKey.SerializeCompressed())
 	return attestTAPublicKeyHex(pubHexString)
 }
 
@@ -174,10 +174,9 @@ func verifyBinaryIntegrity(binary []byte) bool {
 	if binary[binarySize-1] == binaryChecksum {
 		fmt.Printf("The integrity of the file got verified. The checksum is: %x\n", binaryChecksum)
 		return true
-	} else {
-		fmt.Printf("Attention: File integrity check FAILED. The files checksum is: %x, the computed checksum is: %x\n", binary[binarySize-1], binaryChecksum)
-		return false
 	}
+	fmt.Printf("Attention: File integrity check FAILED. The files checksum is: %x, the computed checksum is: %x\n", binary[binarySize-1], binaryChecksum)
+	return false
 }
 
 func generateNewKeyPair() (*secp256k1.PrivateKey, *secp256k1.PublicKey) {
