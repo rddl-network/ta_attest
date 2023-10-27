@@ -20,14 +20,6 @@ go run cmd/ta/main.go
 ```
 
 ## Configuration
-The service needs to be configured via the ```./app.env``` file or environment variables. The defaults are
-```
-PLANETMINT_GO=planetmint-god
-PLANETMINT_ACTOR=plmnt15xuq0yfxtd70l7jzr5hg722sxzcqqdcr8ptpl5
-PLANETMINT_KEYRING=                                           #is optional
-FIRMWARE_ESP32=./tasmota32-rddl.bin
-FIRMWARE_ESP32C3=./tasmota32c3-rddl.bin
-SERIVE_PORT=8080
-SERVICE_BIND=localhost
-```
-A sample ```./app.env``` file is at ```./app.env.template```
+The service needs to be configured via the ```./app.env``` file or environment variables.
+A default configuration file is created at first run.
+Please adapt it and rerun the application.
