@@ -5,6 +5,7 @@ import (
 	"crypto/rand"
 	"encoding/hex"
 	"fmt"
+	"html/template"
 	"log"
 	"net/http"
 	"os"
@@ -13,6 +14,7 @@ import (
 	btcec "github.com/btcsuite/btcd/btcec/v2"
 	"github.com/decred/dcrd/dcrec/secp256k1/v4"
 	"github.com/gin-gonic/gin"
+	"github.com/rddl-network/ta_attest/config"
 	"github.com/spf13/viper"
 )
 
@@ -25,9 +27,33 @@ func LoadConfig(path string) (v *viper.Viper, err error) {
 	v.AutomaticEnv()
 
 	err = v.ReadInConfig()
+	if err == nil {
+		return
+	}
+	log.Println("no config file found.")
+
+	tmpl := template.New("appConfigFileTemplate")
+	configTemplate, err := tmpl.Parse(config.DefaultConfigTemplate)
 	if err != nil {
 		return
 	}
+
+	var buffer bytes.Buffer
+	err = configTemplate.Execute(&buffer, config.GetConfig())
+	if err != nil {
+		return
+	}
+
+	err = v.ReadConfig(&buffer)
+	if err != nil {
+		return
+	}
+	err = v.SafeWriteConfig()
+	if err != nil {
+		return
+	}
+	log.Println("default config file created. please adapt it and restart the application. exiting...")
+	os.Exit(0)
 	return
 }
 
@@ -225,6 +251,9 @@ func loadFirmwares(config *viper.Viper) {
 
 func main() {
 	config, err := LoadConfig("./")
+	if err != nil {
+		log.Fatalf("fatal error config file: %s", err)
+	}
 
 	planetmintGo = config.GetString("PLANETMINT_GO")
 	planetmintAddress = config.GetString("PLANETMINT_ACTOR")
