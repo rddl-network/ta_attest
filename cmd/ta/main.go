@@ -123,11 +123,7 @@ var searchBytes = []byte("RDDLRDDLRDDLRDDLRDDLRDDLRDDLRDDL")
 
 func attestTAPublicKeyHex(pubHexString string) error {
 	ta := "'{\"pubkey\": \"" + pubHexString + "\"}'"
-	commandStr := planetmintGo + " tx machine register-trust-anchor " + ta
-	commandStr = commandStr + " --from " + planetmintAddress
-	commandStr = commandStr + " -y --gas-prices 0.000005plmnt --gas 200000"
-	fmt.Println("Command: " + commandStr)
-	cmd := exec.Command("bash", "-c", commandStr)
+	cmd := exec.Command(planetmintGo, "tx", "machine", "register-trust-anchor", ta, "--from", planetmintAddress, "-y", "--fees", "1plmnt")
 	out, err := cmd.Output()
 	if err != nil {
 		// if there was any error, print it here
