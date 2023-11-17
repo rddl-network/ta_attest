@@ -200,7 +200,7 @@ func getFirmware(c *gin.Context) {
 	c.Header("Content-Disposition", "attachment; filename="+filename)
 	c.Data(http.StatusOK, "application/octet-stream", patchedBinary)
 
-	fmt.Println(" pub key 1: ", pubKey.SerializeCompressed())
+	fmt.Println(" pub key: ", hex.EncodeToString(pubKey.SerializeCompressed()))
 	_ = attestTAPublicKey(pubKey)
 }
 
