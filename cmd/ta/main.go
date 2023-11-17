@@ -63,7 +63,6 @@ func LoadConfig(path string) (v *viper.Viper, err error) {
 }
 
 var planetmintAddress string
-var planetmintGo string
 var libConfig *lib.Config
 
 func init() {
@@ -266,9 +265,8 @@ func main() {
 		log.Fatalf("fatal error config file: %s", err)
 	}
 
-	planetmintGo = config.GetString("PLANETMINT_GO")
 	planetmintAddress = config.GetString("PLANETMINT_ACTOR")
-	if err != nil || planetmintAddress == "" || planetmintGo == "" {
+	if err != nil || planetmintAddress == "" {
 		panic("couldn't read configuration")
 	}
 	fmt.Printf("global config %s\n", planetmintAddress)
