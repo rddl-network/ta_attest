@@ -75,14 +75,13 @@ func init() {
 func toInt(bytes []byte, offset int) int {
 	result := 0
 	for i := 3; i > -1; i-- {
-		result = result << 8
+		result <<= 8
 		result += int(bytes[offset+i])
 	}
 	return result
 }
 
 func xorDataBlob(binary []byte, offset int, length int, is1stSegment bool, checksum byte) byte {
-
 	initializer := 0
 	if is1stSegment {
 		initializer = 1
@@ -90,7 +89,7 @@ func xorDataBlob(binary []byte, offset int, length int, is1stSegment bool, check
 	}
 
 	for i := initializer; i < length; i++ {
-		checksum = checksum ^ binary[offset+i]
+		checksum ^= binary[offset+i]
 	}
 	return checksum
 }
@@ -112,7 +111,7 @@ func xorSegments(binary []byte) byte {
 		computedChecksum = xorDataBlob(binary, offset, length, i == 0, computedChecksum)
 		offset += length
 	}
-	computedChecksum = computedChecksum ^ 0xEF
+	computedChecksum ^= 0xEF
 
 	return computedChecksum
 }
@@ -183,13 +182,14 @@ func getFirmware(c *gin.Context) {
 	privKey, pubKey := generateNewKeyPair()
 	var filename string
 	var fileobj []byte
-	if mcu == "esp32" {
+	switch mcu {
+	case "esp32":
 		fileobj = firmwareESP32
 		filename = "tasmota32-rddl.bin"
-	} else if mcu == "esp32c3" {
+	case "esp32c3":
 		fileobj = firmwareESP32C3
 		filename = "tasmota32c3-rddl.bin"
-	} else {
+	default:
 		c.String(404, "Resource not found, Firmware not supported")
 		return
 	}
@@ -275,5 +275,4 @@ func main() {
 	if err != nil {
 		fmt.Print(err.Error())
 	}
-
 }

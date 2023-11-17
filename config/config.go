@@ -12,11 +12,11 @@ SERVICE_PORT={{ .ServicePort }}
 
 // Config defines TA's top level configuration
 type Config struct {
-	FirmwareESP32   string `mapstructure:"firmware-esp32" json:"firmware-esp32"`
-	FirmwareESP32C3 string `mapstructure:"firmware-esp32c3" json:"firmware-esp32c3"`
-	PlanetmintActor string `mapstructure:"planetmint-actor" json:"planetmint-actor"`
-	ServiceBind     string `mapstructure:"service-bind" json:"service-bind"`
-	ServicePort     int    `mapstructure:"service-port" json:"service-port"`
+	FirmwareESP32   string `json:"firmware-esp32"    mapstructure:"firmware-esp32"`
+	FirmwareESP32C3 string `json:"firmware-esp32-c3" mapstructure:"firmware-esp32-c3"`
+	PlanetmintActor string `json:"planetmint-actor"  mapstructure:"planetmint-actor"`
+	ServiceBind     string `json:"service-bind"      mapstructure:"service-bind"`
+	ServicePort     int    `json:"service-port"      mapstructure:"service-port"`
 }
 
 // global singleton
