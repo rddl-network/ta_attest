@@ -2,6 +2,7 @@ package main
 
 import (
 	"bytes"
+	"context"
 	"crypto/rand"
 	"encoding/hex"
 	"fmt"
@@ -9,13 +10,17 @@ import (
 	"log"
 	"net/http"
 	"os"
-	"os/exec"
 
 	btcec "github.com/btcsuite/btcd/btcec/v2"
 	"github.com/decred/dcrd/dcrec/secp256k1/v4"
 	"github.com/gin-gonic/gin"
 	"github.com/rddl-network/ta_attest/config"
 	"github.com/spf13/viper"
+
+	sdk "github.com/cosmos/cosmos-sdk/types"
+	"github.com/planetmint/planetmint-go/app"
+	"github.com/planetmint/planetmint-go/lib"
+	machinetypes "github.com/planetmint/planetmint-go/x/machine/types"
 )
 
 func LoadConfig(path string) (v *viper.Viper, err error) {
@@ -59,6 +64,14 @@ func LoadConfig(path string) (v *viper.Viper, err error) {
 
 var planetmintAddress string
 var planetmintGo string
+var libConfig *lib.Config
+
+func init() {
+	encodingConfig := app.MakeEncodingConfig()
+
+	libConfig = lib.GetConfig()
+	libConfig.SetEncodingConfig(encodingConfig)
+}
 
 func toInt(bytes []byte, offset int) int {
 	result := 0
@@ -122,20 +135,22 @@ var firmwareESP32C3 []byte
 var searchBytes = []byte("RDDLRDDLRDDLRDDLRDDLRDDLRDDLRDDL")
 
 func attestTAPublicKeyHex(pubHexString string) error {
-	ta := "'{\"pubkey\": \"" + pubHexString + "\"}'"
-	commandStr := planetmintGo + " tx machine register-trust-anchor " + ta
-	commandStr = commandStr + " --from " + planetmintAddress
-	commandStr = commandStr + " -y --gas-prices 0.000005plmnt --gas 200000"
-	fmt.Println("Command: " + commandStr)
-	cmd := exec.Command("bash", "-c", commandStr)
-	out, err := cmd.Output()
+	addr := sdk.MustAccAddressFromBech32(planetmintAddress)
+	msg := machinetypes.NewMsgRegisterTrustAnchor(planetmintAddress, &machinetypes.TrustAnchor{
+		Pubkey: pubHexString,
+	})
+
+	ctx := context.Background()
+	txBytes, _, err := lib.BuildAndSignTx(ctx, addr, msg)
 	if err != nil {
-		// if there was any error, print it here
-		fmt.Println("could not run command: ", err)
+		return err
 	}
-	// otherwise, print the output from running the command
-	fmt.Println("Output: ", string(out))
-	return err
+
+	_, err = lib.BroadcastTx(ctx, txBytes)
+	if err != nil {
+		return err
+	}
+	return nil
 }
 
 func attestTAPublicKey(publicKey *secp256k1.PublicKey) error {
