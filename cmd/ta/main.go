@@ -2,7 +2,6 @@ package main
 
 import (
 	"bytes"
-	"context"
 	"crypto/rand"
 	"encoding/hex"
 	"fmt"
@@ -138,13 +137,7 @@ func attestTAPublicKeyHex(pubHexString string) error {
 		Pubkey: pubHexString,
 	})
 
-	ctx := context.Background()
-	txBytes, _, err := lib.BuildAndSignTx(ctx, addr, msg)
-	if err != nil {
-		return err
-	}
-
-	_, err = lib.BroadcastTx(ctx, txBytes)
+	_, err := lib.BroadcastTxWithFileLock(addr, msg)
 	if err != nil {
 		return err
 	}
