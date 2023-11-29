@@ -258,6 +258,12 @@ func main() {
 		log.Fatalf("fatal error config file: %s", err)
 	}
 
+	planetmintChainID := config.GetString("PLANETMINT_CHAIN_ID")
+	if planetmintChainID == "" {
+		log.Fatalf("chain id must not be empty")
+	}
+	libConfig.SetChainID(planetmintChainID)
+
 	planetmintAddress = config.GetString("PLANETMINT_ACTOR")
 	if err != nil || planetmintAddress == "" {
 		panic("couldn't read configuration")
