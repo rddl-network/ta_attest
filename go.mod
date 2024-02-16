@@ -10,6 +10,7 @@ require (
 	github.com/planetmint/planetmint-go v0.6.5
 	github.com/planetmint/planetmint-go/lib v0.2.1
 	github.com/spf13/viper v1.16.0
+	gotest.tools v2.2.0+incompatible
 )
 
 require (

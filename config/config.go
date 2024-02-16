@@ -3,12 +3,13 @@ package config
 import "sync"
 
 const DefaultConfigTemplate = `
-FIRMWARE_ESP32={{ .FirmwareESP32 }}
-FIRMWARE_ESP32C3={{ .FirmwareESP32C3 }}
-PLANETMINT_ACTOR={{ .PlanetmintActor }}
-PLANETMINT_CHAIN_ID={{ .PlanetmintChainID }}
-SERVICE_BIND={{ .ServiceBind }}
-SERVICE_PORT={{ .ServicePort }}
+FIRMWARE_ESP32="{{ .FirmwareESP32 }}"
+FIRMWARE_ESP32C3="{{ .FirmwareESP32C3 }}"
+PLANETMINT_ACTOR="{{ .PlanetmintActor }}"
+PLANETMINT_CHAIN_ID="{{ .PlanetmintChainID }}"
+SERVICE_BIND="{{ .ServiceBind }}"
+SERVICE_PORT="{{ .ServicePort }}"
+TESTNET_MODE={{ .TestnetMode }}
 `
 
 // Config defines TA's top level configuration
@@ -19,6 +20,7 @@ type Config struct {
 	PlanetmintChainID string `json:"planetmint-chain-id" mapstructure:"planetmint-chain-id"`
 	ServiceBind       string `json:"service-bind"        mapstructure:"service-bind"`
 	ServicePort       int    `json:"service-port"        mapstructure:"service-port"`
+	TestnetMode       bool   `json:"testnet-mode"        mapstructure:"testnet-mode"`
 }
 
 // global singleton
@@ -36,6 +38,7 @@ func DefaultConfig() *Config {
 		PlanetmintChainID: "planetmint-testnet-1",
 		ServiceBind:       "localhost",
 		ServicePort:       8080,
+		TestnetMode:       false,
 	}
 }
 
