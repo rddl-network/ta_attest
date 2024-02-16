@@ -34,8 +34,8 @@ func loadConfig(path string) (cfg *config.Config, err error) {
 	}
 	log.Println("no config file found")
 
-	template := template.New("appConfigFileTemplate")
-	configTemplate, err := template.Parse(config.DefaultConfigTemplate)
+	tmpl := template.New("appConfigFileTemplate")
+	configTemplate, err := tmpl.Parse(config.DefaultConfigTemplate)
 	if err != nil {
 		return
 	}

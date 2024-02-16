@@ -8,7 +8,7 @@ FIRMWARE_ESP32C3="{{ .FirmwareESP32C3 }}"
 PLANETMINT_ACTOR="{{ .PlanetmintActor }}"
 PLANETMINT_CHAIN_ID="{{ .PlanetmintChainID }}"
 SERVICE_BIND="{{ .ServiceBind }}"
-SERVICE_PORT="{{ .ServicePort }}"
+SERVICE_PORT={{ .ServicePort }}"
 TESTNET_MODE={{ .TestnetMode }}
 `
 
