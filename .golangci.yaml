@@ -86,3 +86,8 @@ linters-settings:
       use-field-name: true
       rules:
         json: kebab
+issues:
+  exclude-rules:
+    - path: service/router_test\.go
+      linters:
+        - paralleltest
