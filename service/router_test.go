@@ -9,7 +9,6 @@ import (
 )
 
 func TestTestnetModeTrue(t *testing.T) {
-	t.Parallel()
 	cfg := config.DefaultConfig()
 	cfg.TestnetMode = true
 	s := service.NewTrustAnchorAttestationService(cfg)
@@ -20,7 +19,6 @@ func TestTestnetModeTrue(t *testing.T) {
 }
 
 func TestTestnetModeFalse(t *testing.T) {
-	t.Parallel()
 	cfg := config.DefaultConfig()
 	s := service.NewTrustAnchorAttestationService(cfg)
 
