@@ -44,7 +44,6 @@ func (s *TAAService) loadFirmwares() {
 }
 
 func (s *TAAService) startWebService() error {
-
 	addr := fmt.Sprintf("%s:%d", s.cfg.ServiceBind, s.cfg.ServicePort)
 	err := s.router.Run(addr)
 
