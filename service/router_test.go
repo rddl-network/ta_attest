@@ -166,7 +166,7 @@ func TestPostCreateAccount(t *testing.T) {
 	}
 
 	for i := 0; i < len(tests); i++ {
-		tc := tests[0]
+		tc := tests[i]
 		t.Run(tc.desc, func(t *testing.T) {
 			pmcMock := tc.mocker(t)
 			s := service.NewTrustAnchorAttestationService(cfg, db, pmcMock)
