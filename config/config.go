@@ -11,6 +11,7 @@ SERVICE_BIND="{{ .ServiceBind }}"
 SERVICE_PORT={{ .ServicePort }}"
 TESTNET_MODE={{ .TestnetMode }}
 DB_PATH="{{ .DBPath }}"
+PLANETMINT_RPC_HOST="{{ .PlanetmintRPCHost }}"
 `
 
 // Config defines TA's top level configuration
@@ -23,6 +24,7 @@ type Config struct {
 	ServicePort       int    `json:"service-port"        mapstructure:"service-port"`
 	TestnetMode       bool   `json:"testnet-mode"        mapstructure:"testnet-mode"`
 	DBPath            string `json:"db-path"             mapstructure:"db-path"`
+	PlanetmintRPCHost string `json:"planetmint-rpc-host" mapstructure:"planetmint-rpc-host"`
 }
 
 // global singleton
@@ -42,6 +44,7 @@ func DefaultConfig() *Config {
 		ServicePort:       8080,
 		TestnetMode:       false,
 		DBPath:            "data",
+		PlanetmintRPCHost: "127.0.0.1:9090",
 	}
 }
 

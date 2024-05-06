@@ -12,19 +12,23 @@ type TAAService struct {
 	cfg             *config.Config
 	router          *gin.Engine
 	db              *leveldb.DB
+	pmc             IPlanetmintClient
 	firmwareESP32   []byte
 	firmwareESP32C3 []byte
 }
 
-func NewTrustAnchorAttestationService(cfg *config.Config) *TAAService {
+func NewTrustAnchorAttestationService(cfg *config.Config, db *leveldb.DB, pmc IPlanetmintClient) *TAAService {
 	libConfig.SetChainID(cfg.PlanetmintChainID)
-	service := &TAAService{}
-	service.cfg = cfg
+	service := &TAAService{
+		db:  db,
+		cfg: cfg,
+		pmc: pmc,
+	}
 
-	service.db = initDB(cfg.DBPath)
 	gin.SetMode(gin.ReleaseMode)
 	service.router = gin.New()
 	service.router.GET("/firmware/:mcu", service.getFirmware)
+	service.router.POST("/create-account", service.createAccount)
 	if service.cfg.TestnetMode {
 		service.router.POST("/register/:pubkey", service.postPubKey)
 	}

@@ -11,8 +11,8 @@ import (
 	"github.com/syndtr/goleveldb/leveldb/storage"
 )
 
-func createNAccounts(n int) (accounts []types.PostFundingRequest) {
-	accounts = make([]types.PostFundingRequest, n)
+func createNAccounts(n int) (accounts []types.PostCreateAccountRequest) {
+	accounts = make([]types.PostCreateAccountRequest, n)
 	for i := range accounts {
 		accounts[i].MachineID = "machineID/" + strconv.Itoa(i)
 		accounts[i].PlmntAddress = "plmntAddr/" + strconv.Itoa(i)

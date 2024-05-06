@@ -15,7 +15,7 @@ func initDB(path string) (db *leveldb.DB) {
 	return db
 }
 
-func StoreAccount(db *leveldb.DB, req types.PostFundingRequest) (err error) {
+func StoreAccount(db *leveldb.DB, req types.PostCreateAccountRequest) (err error) {
 	bytes, err := json.Marshal(req)
 	if err != nil {
 		return

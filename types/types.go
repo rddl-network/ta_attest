@@ -1,6 +1,6 @@
 package types
 
-type PostFundingRequest struct {
+type PostCreateAccountRequest struct {
 	MachineID    string `binding:"required" json:"machine-id"`
 	PlmntAddress string `binding:"required" json:"plmnt-address"`
 	Signature    string `binding:"required" json:"signature"`

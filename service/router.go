@@ -6,7 +6,14 @@ import (
 	"net/http"
 
 	"github.com/gin-gonic/gin"
+	"github.com/rddl-network/go-utils/signature"
+	"github.com/rddl-network/ta_attest/types"
+	"github.com/syndtr/goleveldb/leveldb"
 )
+
+func (s *TAAService) GetRouter() *gin.Engine {
+	return s.router
+}
 
 func (s *TAAService) getFirmware(c *gin.Context) {
 	mcu := c.Param("mcu")
@@ -32,14 +39,14 @@ func (s *TAAService) getFirmware(c *gin.Context) {
 	c.Data(http.StatusOK, "application/octet-stream", patchedFirmware)
 
 	fmt.Println(" pub key: ", hex.EncodeToString(pubKey.SerializeCompressed()))
-	_ = s.attestTAPublicKey(pubKey)
+	_ = s.pmc.AttestTAPublicKey(pubKey)
 }
 
 func (s *TAAService) postPubKey(c *gin.Context) {
 	pubKey := c.Param("pubkey")
 	_, err := hex.DecodeString(pubKey)
 	if err == nil {
-		err = s.attestTAPublicKeyHex(pubKey)
+		err = s.pmc.AttestTAPublicKeyHex(pubKey)
 		if err == nil {
 			c.IndentedJSON(http.StatusOK, pubKey)
 		} else {
@@ -48,6 +55,70 @@ func (s *TAAService) postPubKey(c *gin.Context) {
 	} else {
 		c.IndentedJSON(http.StatusBadRequest, gin.H{"message": "invalid pubkey"})
 	}
+}
+
+func (s *TAAService) createAccount(c *gin.Context) {
+	var requestBody types.PostCreateAccountRequest
+	if err := c.BindJSON(&requestBody); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	// check if account already in db
+	found, err := HasAccount(s.db, requestBody.PlmntAddress)
+	if err != nil && err != leveldb.ErrNotFound {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to read db"})
+		return
+	}
+
+	if found {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "account has already been funded"})
+		return
+	}
+
+	// verify machine ID validity
+	isValid, err := signature.ValidateSignature(requestBody.MachineID, requestBody.Signature, requestBody.MachineID)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "failed to validate signature"})
+		return
+	}
+
+	if !isValid {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid signature"})
+		return
+	}
+
+	// verify trust anchor registered
+	taStatus, err := s.pmc.GetTrustAnchorStatus(requestBody.MachineID)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to fetch trust anchor status"})
+		return
+	}
+
+	if taStatus.Isactivated {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "trust anchor already in use"})
+		return
+	}
+
+	// verify plmnt address and not already funded
+	account, err := s.pmc.GetAccount(requestBody.PlmntAddress)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to fetch account"})
+		return
+	}
+
+	// If account exists no need for funding
+	if account != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "planetmint account already exists"})
+	} else {
+		err = s.pmc.FundAccount(requestBody.PlmntAddress)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to send funds"})
+			return
+		}
+	}
+
+	StoreAccount(s.db, requestBody)
 }
 
 func (s *TAAService) GetRoutes() gin.RoutesInfo {
