@@ -10,6 +10,7 @@ PLANETMINT_CHAIN_ID="{{ .PlanetmintChainID }}"
 SERVICE_BIND="{{ .ServiceBind }}"
 SERVICE_PORT={{ .ServicePort }}"
 TESTNET_MODE={{ .TestnetMode }}
+DB_PATH="{{ .DBPath }}"
 `
 
 // Config defines TA's top level configuration
@@ -21,6 +22,7 @@ type Config struct {
 	ServiceBind       string `json:"service-bind"        mapstructure:"service-bind"`
 	ServicePort       int    `json:"service-port"        mapstructure:"service-port"`
 	TestnetMode       bool   `json:"testnet-mode"        mapstructure:"testnet-mode"`
+	DBPath            string `json:"db-path"             mapstructure:"db-path"`
 }
 
 // global singleton
@@ -39,6 +41,7 @@ func DefaultConfig() *Config {
 		ServiceBind:       "localhost",
 		ServicePort:       8080,
 		TestnetMode:       false,
+		DBPath:            "data",
 	}
 }
 

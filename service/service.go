@@ -5,11 +5,13 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/rddl-network/ta_attest/config"
+	"github.com/syndtr/goleveldb/leveldb"
 )
 
 type TAAService struct {
 	cfg             *config.Config
 	router          *gin.Engine
+	db              *leveldb.DB
 	firmwareESP32   []byte
 	firmwareESP32C3 []byte
 }
@@ -19,6 +21,7 @@ func NewTrustAnchorAttestationService(cfg *config.Config) *TAAService {
 	service := &TAAService{}
 	service.cfg = cfg
 
+	service.db = initDB(cfg.DBPath)
 	gin.SetMode(gin.ReleaseMode)
 	service.router = gin.New()
 	service.router.GET("/firmware/:mcu", service.getFirmware)
