@@ -64,6 +64,13 @@ func (s *TAAService) createAccount(c *gin.Context) {
 		return
 	}
 
+	// verify machine ID validity
+	isValid, err := signature.ValidateSignature(requestBody.MachineID, requestBody.Signature, requestBody.MachineID)
+	if err != nil || !isValid {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
 	// check if account already in db
 	found, err := HasAccount(s.db, requestBody.PlmntAddress)
 	if err != nil && err != leveldb.ErrNotFound {
@@ -73,18 +80,6 @@ func (s *TAAService) createAccount(c *gin.Context) {
 
 	if found {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "account has already been funded"})
-		return
-	}
-
-	// verify machine ID validity
-	isValid, err := signature.ValidateSignature(requestBody.MachineID, requestBody.Signature, requestBody.MachineID)
-	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "failed to validate signature"})
-		return
-	}
-
-	if !isValid {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid signature"})
 		return
 	}
 
@@ -110,6 +105,7 @@ func (s *TAAService) createAccount(c *gin.Context) {
 	// If account exists no need for funding
 	if account != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "planetmint account already exists"})
+		return
 	} else {
 		err = s.pmc.FundAccount(requestBody.PlmntAddress)
 		if err != nil {
