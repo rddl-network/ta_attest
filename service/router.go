@@ -7,6 +7,7 @@ import (
 	"net/http"
 
 	"github.com/gin-gonic/gin"
+	pkiutil "github.com/rddl-network/go-utils/pki"
 	"github.com/rddl-network/go-utils/signature"
 	"github.com/rddl-network/ta_attest/types"
 	"github.com/syndtr/goleveldb/leveldb"
@@ -18,7 +19,16 @@ func (s *TAAService) GetRouter() *gin.Engine {
 
 func (s *TAAService) getFirmware(c *gin.Context) {
 	mcu := c.Param("mcu")
-	privKey, pubKey := GenerateNewKeyPair()
+	pkSource, err := pkiutil.GetRandomPrivateKey()
+	if err != nil {
+		c.IndentedJSON(http.StatusInternalServerError, gin.H{"error": fmt.Errorf("%w", err)})
+		return
+	}
+	privKey, pubKey, err := pkiutil.GenerateNewKeyPair(pkSource)
+	if err != nil {
+		c.IndentedJSON(http.StatusInternalServerError, gin.H{"error": fmt.Errorf("%w", err)})
+		return
+	}
 	var filename string
 	var firmwareBytes []byte
 	switch mcu {
