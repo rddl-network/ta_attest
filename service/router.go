@@ -2,6 +2,7 @@ package service
 
 import (
 	"encoding/hex"
+	"errors"
 	"fmt"
 	"net/http"
 
@@ -73,7 +74,7 @@ func (s *TAAService) createAccount(c *gin.Context) {
 
 	// check if account already in db
 	found, err := HasAccount(s.db, requestBody.PlmntAddress)
-	if err != nil && err != leveldb.ErrNotFound {
+	if err != nil && !errors.Is(err, leveldb.ErrNotFound) {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to read db"})
 		return
 	}
@@ -106,15 +107,18 @@ func (s *TAAService) createAccount(c *gin.Context) {
 	if account != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "planetmint account already exists"})
 		return
-	} else {
-		err = s.pmc.FundAccount(requestBody.PlmntAddress)
-		if err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to send funds"})
-			return
-		}
 	}
 
-	StoreAccount(s.db, requestBody)
+	err = s.pmc.FundAccount(requestBody.PlmntAddress)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to send funds"})
+		return
+	}
+
+	err = StoreAccount(s.db, requestBody)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to store account"})
+	}
 }
 
 func (s *TAAService) GetRoutes() gin.RoutesInfo {

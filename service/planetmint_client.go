@@ -80,8 +80,9 @@ func (pmc *PlanetmintClient) GetAccount(plmntAddress string) (res *authtypes.Que
 
 	if err != nil {
 		if strings.Contains(err.Error(), codes.NotFound.String()) {
-			return nil, nil
+			err = nil
 		}
+		return
 	}
 	return
 }
