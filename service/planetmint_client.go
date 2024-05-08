@@ -89,7 +89,7 @@ func (pmc *PlanetmintClient) GetAccount(plmntAddress string) (res *authtypes.Que
 
 func (pmc *PlanetmintClient) FundAccount(plmntAddress string) error {
 	fromAddr := sdk.MustAccAddressFromBech32(pmc.actor)
-	toAddr := sdk.AccAddress(plmntAddress)
+	toAddr := sdk.MustAccAddressFromBech32(plmntAddress)
 	msg := banktypes.NewMsgSend(
 		fromAddr,
 		toAddr,
