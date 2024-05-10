@@ -36,6 +36,7 @@ func loadConfig(path string) (cfg *config.Config, err error) {
 		cfg.TestnetMode = v.GetBool("TESTNET_MODE")
 		cfg.DBPath = v.GetString("DB_PATH")
 		cfg.PlanetmintRPCHost = v.GetString("PLANETMINT_RPC_HOST")
+		cfg.LogLevel = v.GetString("LOG_LEVEL")
 		return
 	}
 	log.Println("no config file found")

@@ -72,6 +72,7 @@ func (s *TAAService) createAccount(c *gin.Context) {
 	var requestBody types.PostCreateAccountRequest
 	if err := c.BindJSON(&requestBody); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		s.logger.Error("msg", err.Error())
 		return
 	}
 
@@ -84,6 +85,7 @@ func (s *TAAService) createAccount(c *gin.Context) {
 			if errR1 != nil {
 				errStr = errR1.Error() + ", "
 			}
+			s.logger.Error("msg", errStr+errR1.Error())
 			c.JSON(http.StatusBadRequest, gin.H{"error": errStr + errK1.Error()})
 			return
 		}
@@ -92,6 +94,7 @@ func (s *TAAService) createAccount(c *gin.Context) {
 	// check if account already in db
 	found, err := HasAccount(s.db, requestBody.PlmntAddress)
 	if err != nil && !errors.Is(err, leveldb.ErrNotFound) {
+		s.logger.Error("msg", err.Error())
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to read db"})
 		return
 	}
@@ -104,6 +107,7 @@ func (s *TAAService) createAccount(c *gin.Context) {
 	// verify trust anchor registered
 	taStatus, err := s.pmc.GetTrustAnchorStatus(requestBody.MachineID)
 	if err != nil {
+		s.logger.Error("msg", "failed to fetch trust anchor status", "machineID", requestBody.MachineID)
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to fetch trust anchor status"})
 		return
 	}
@@ -116,6 +120,7 @@ func (s *TAAService) createAccount(c *gin.Context) {
 	// verify plmnt address and not already funded
 	account, err := s.pmc.GetAccount(requestBody.PlmntAddress)
 	if err != nil {
+		s.logger.Error("msg", "failed to fetch account", "plmntAddress", requestBody.PlmntAddress)
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to fetch account"})
 		return
 	}
@@ -128,10 +133,12 @@ func (s *TAAService) createAccount(c *gin.Context) {
 
 	err = s.pmc.FundAccount(requestBody.PlmntAddress)
 	if err != nil {
+		s.logger.Error("msg", "failed to send funds", requestBody.PlmntAddress)
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to send funds"})
 		return
 	}
 
+	s.logger.Info("msg", "funding successful, storing account", "plmntAddress", requestBody.PlmntAddress, "machineID", requestBody.MachineID)
 	err = StoreAccount(s.db, requestBody)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to store account"})
