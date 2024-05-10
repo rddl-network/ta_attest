@@ -88,7 +88,7 @@ func TestPostCreateAccount(t *testing.T) {
 				Signature:    "b7479edbf523c55f771991393fce6b481edfab4c85adf60eb12beb5fdc9c13aaa67852d8cd427a3dd5b90f0e4f9bda694e453ef624ff0cde254c3b7ccc7cdcd3",
 				PlmntAddress: "plmntAddr",
 			},
-			resBody: "{\"error\":\"invalid signature\"}",
+			resBody: "{\"error\":\"unable to unmarshal signature, invalid signature\"}",
 			code:    400,
 			mocker:  defaultMocker,
 		},
