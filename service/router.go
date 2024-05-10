@@ -76,10 +76,17 @@ func (s *TAAService) createAccount(c *gin.Context) {
 	}
 
 	// verify machine ID validity
-	isValid, err := signature.ValidateSignature(requestBody.MachineID, requestBody.Signature, requestBody.MachineID)
-	if err != nil || !isValid {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
-		return
+	isValidSecp256r1, errR1 := signature.ValidateSECP256R1Signature(requestBody.MachineID, requestBody.Signature, requestBody.MachineID)
+	if errR1 != nil || !isValidSecp256r1 {
+		isValidSecp256k1, errK1 := signature.ValidateSignature(requestBody.MachineID, requestBody.Signature, requestBody.MachineID)
+		if errK1 != nil || !isValidSecp256k1 {
+			errStr := ""
+			if errR1 != nil {
+				errStr = errR1.Error() + ", "
+			}
+			c.JSON(http.StatusBadRequest, gin.H{"error": errStr + errK1.Error()})
+			return
+		}
 	}
 
 	// check if account already in db
