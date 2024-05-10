@@ -76,6 +76,8 @@ func (s *TAAService) createAccount(c *gin.Context) {
 		return
 	}
 
+	s.logger.Info("msg", "create-account request received", "machineID", requestBody.MachineID, "signature", requestBody.Signature, "plmntAddress", requestBody.PlmntAddress)
+
 	// verify machine ID validity
 	isValidSecp256r1, errR1 := signature.ValidateSECP256R1Signature(requestBody.MachineID, requestBody.Signature, requestBody.MachineID)
 	if errR1 != nil || !isValidSecp256r1 {
