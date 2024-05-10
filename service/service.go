@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	"github.com/gin-gonic/gin"
+	"github.com/rddl-network/go-utils/logger"
 	"github.com/rddl-network/ta_attest/config"
 	"github.com/syndtr/goleveldb/leveldb"
 )
@@ -13,6 +14,7 @@ type TAAService struct {
 	router          *gin.Engine
 	db              *leveldb.DB
 	pmc             IPlanetmintClient
+	logger          logger.AppLogger
 	firmwareESP32   []byte
 	firmwareESP32C3 []byte
 }
@@ -20,9 +22,10 @@ type TAAService struct {
 func NewTrustAnchorAttestationService(cfg *config.Config, db *leveldb.DB, pmc IPlanetmintClient) *TAAService {
 	libConfig.SetChainID(cfg.PlanetmintChainID)
 	service := &TAAService{
-		db:  db,
-		cfg: cfg,
-		pmc: pmc,
+		db:     db,
+		cfg:    cfg,
+		pmc:    pmc,
+		logger: logger.GetLogger(cfg.LogLevel),
 	}
 
 	gin.SetMode(gin.ReleaseMode)

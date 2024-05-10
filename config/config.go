@@ -1,6 +1,10 @@
 package config
 
-import "sync"
+import (
+	"sync"
+
+	"github.com/rddl-network/go-utils/logger"
+)
 
 const DefaultConfigTemplate = `
 FIRMWARE_ESP32="{{ .FirmwareESP32 }}"
@@ -12,6 +16,7 @@ SERVICE_PORT={{ .ServicePort }}
 TESTNET_MODE={{ .TestnetMode }}
 DB_PATH="{{ .DBPath }}"
 PLANETMINT_RPC_HOST="{{ .PlanetmintRPCHost }}"
+LOG_LEVEL="{{ .LogLevel }}"
 `
 
 // Config defines TA's top level configuration
@@ -25,6 +30,7 @@ type Config struct {
 	TestnetMode       bool   `json:"testnet-mode"        mapstructure:"testnet-mode"`
 	DBPath            string `json:"db-path"             mapstructure:"db-path"`
 	PlanetmintRPCHost string `json:"planetmint-rpc-host" mapstructure:"planetmint-rpc-host"`
+	LogLevel          string `json:"log-level"           mapstructure:"log-level"`
 }
 
 // global singleton
@@ -45,6 +51,7 @@ func DefaultConfig() *Config {
 		TestnetMode:       false,
 		DBPath:            "data",
 		PlanetmintRPCHost: "127.0.0.1:9090",
+		LogLevel:          logger.DEBUG,
 	}
 }
 
