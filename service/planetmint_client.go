@@ -5,6 +5,8 @@ import (
 	"encoding/hex"
 	"strings"
 
+	"github.com/cosmos/cosmos-sdk/codec"
+	ctypes "github.com/cosmos/cosmos-sdk/codec/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
 	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
@@ -12,8 +14,10 @@ import (
 	"github.com/planetmint/planetmint-go/app"
 	"github.com/planetmint/planetmint-go/lib"
 	machinetypes "github.com/planetmint/planetmint-go/x/machine/types"
+	"github.com/rddl-network/ta_attest/config"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/credentials/insecure"
 )
 
 type IPlanetmintClient interface {
@@ -34,6 +38,22 @@ func NewPlanetmintClient(actor string, conn *grpc.ClientConn) *PlanetmintClient 
 		actor: actor,
 		conn:  conn,
 	}
+}
+
+func SetupGRPCConnection(cfg *config.Config) (conn *grpc.ClientConn, err error) {
+	interfaceRegistry := ctypes.NewInterfaceRegistry()
+	interfaceRegistry.RegisterInterface(
+		"cosmos.auth.IAccount",
+		(*authtypes.AccountI)(nil),
+		&authtypes.BaseAccount{},
+		&authtypes.ModuleAccount{},
+	)
+
+	return grpc.Dial(
+		cfg.PlanetmintRPCHost,
+		grpc.WithTransportCredentials(insecure.NewCredentials()),
+		grpc.WithDefaultCallOptions(grpc.ForceCodec(codec.NewProtoCodec(interfaceRegistry).GRPCCodec())),
+	)
 }
 
 var libConfig *lib.Config
