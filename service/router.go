@@ -137,7 +137,7 @@ func (s *TAAService) createAccount(c *gin.Context) {
 	err = s.pmc.FundAccount(requestBody.PlmntAddress)
 	if err != nil {
 		s.logger.Error("msg", "failed to send funds ", "address", requestBody.PlmntAddress, "error", err.Error())
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to send funds: " + err.Error()})
 		return
 	}
 

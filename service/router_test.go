@@ -147,7 +147,7 @@ func TestPostCreateAccount(t *testing.T) {
 				Signature:    "DE97AEF2A99B9371882C4639A607A11AF2BA8AE520FF7B28203193F5EB63AE1670D431960C3103682901A8F5B3C542139DCF8FB44F97780FC8D8A45F8A4E59E3",
 				PlmntAddress: "otherPlmntAddr",
 			},
-			resBody: "{\"error\":\"failed to send funds\"}",
+			resBody: "{\"error\":\"failed to send funds: some err\"}",
 			code:    500,
 			mocker: func(t *testing.T) *testutil.MockIPlanetmintClient {
 				ctrl := gomock.NewController(t)
