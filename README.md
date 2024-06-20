@@ -19,6 +19,11 @@ A build service can be executed via ```./ta``` or be run via the following go co
 go run cmd/ta/main.go
 ```
 
+The following command will attest a given newline seperated file of Trust Wallet machine IDs to the configured network:
+```
+./ta --attest-machine-ids-by-file keys.yaml
+```
+
 ## Configuration
 The service needs to be configured via the ```./app.env``` file or environment variables.
 A default configuration file is created at first run.

@@ -20,7 +20,6 @@ type TAAService struct {
 }
 
 func NewTrustAnchorAttestationService(cfg *config.Config, db *leveldb.DB, pmc IPlanetmintClient) *TAAService {
-	libConfig.SetChainID(cfg.PlanetmintChainID)
 	service := &TAAService{
 		db:     db,
 		cfg:    cfg,
