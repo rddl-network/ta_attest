@@ -101,7 +101,6 @@ func attestFileContent(filename string, pmc service.PlanetmintClient) {
 	if err := scanner.Err(); err != nil {
 		log.Println("Error reading file:", err)
 	}
-
 }
 
 func main() {
@@ -117,7 +116,7 @@ func main() {
 	}
 	pmc := service.NewPlanetmintClient(cfg.PlanetmintActor, grpcConn)
 
-	csvFile := flag.String("attest-machine-ids-by-file", "", "Path to a new line seperated machine IDs")
+	csvFile := flag.String("attest-machine-ids-by-file", "", "Path to a new line separated machine IDs")
 	flag.Parse()
 
 	if *csvFile != "" {
