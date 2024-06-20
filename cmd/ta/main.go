@@ -1,18 +1,29 @@
 package main
 
 import (
+	"bufio"
 	"bytes"
+	"flag"
 	"fmt"
 	"html/template"
 	"log"
 	"os"
 
+	"github.com/planetmint/planetmint-go/app"
+	"github.com/planetmint/planetmint-go/lib"
 	"github.com/rddl-network/ta_attest/config"
 	"github.com/rddl-network/ta_attest/service"
-	"github.com/syndtr/goleveldb/leveldb"
-
 	"github.com/spf13/viper"
+	"github.com/syndtr/goleveldb/leveldb"
 )
+
+var libConfig *lib.Config
+
+func init() {
+	encodingConfig := app.MakeEncodingConfig()
+	libConfig = lib.GetConfig()
+	libConfig.SetEncodingConfig(encodingConfig)
+}
 
 func loadConfig(path string) (cfg *config.Config, err error) {
 	v := viper.New()
@@ -61,26 +72,68 @@ func loadConfig(path string) (cfg *config.Config, err error) {
 	return
 }
 
+func attestFileContent(filename string, pmc service.PlanetmintClient) {
+	// Open the file for reading
+	file, err := os.Open(filename)
+	if err != nil {
+		log.Println("Error opening file:", err)
+		return
+	}
+	defer file.Close() // Ensure file gets closed even in case of errors
+
+	// Create a scanner to read the file line by line
+	scanner := bufio.NewScanner(file)
+	log.Println("Start processing the file ...")
+	// Iterate over each line in the scanner
+	for scanner.Scan() {
+		line := scanner.Text()
+		// Call your attestation function with the current line
+		log.Println("Attesting : " + line)
+		err := pmc.AttestTAPublicKeyHex(line)
+		if err != nil {
+			log.Println(err.Error())
+		} else {
+			log.Println("Successfully attested.")
+		}
+	}
+	log.Println("End of file")
+	// Handle any errors during scanning
+	if err := scanner.Err(); err != nil {
+		log.Println("Error reading file:", err)
+	}
+}
+
 func main() {
 	cfg, err := loadConfig("./")
 	if err != nil {
 		log.Fatalf("fatal error reading the configuration %s", err)
 	}
 
-	db, err := leveldb.OpenFile(cfg.DBPath, nil)
-	if err != nil {
-		log.Fatalf("fatal error opening db %s", err)
-	}
-
+	libConfig.SetChainID(cfg.PlanetmintChainID)
 	grpcConn, err := service.SetupGRPCConnection(cfg)
 	if err != nil {
 		log.Fatalf("fatal error opening grpc connection %s", err)
 	}
 	pmc := service.NewPlanetmintClient(cfg.PlanetmintActor, grpcConn)
 
-	TAAttestationService := service.NewTrustAnchorAttestationService(cfg, db, pmc)
-	err = TAAttestationService.Run()
-	if err != nil {
-		fmt.Print(err.Error())
+	csvFile := flag.String("attest-machine-ids-by-file", "", "Path to a new line separated machine IDs")
+	flag.Parse()
+
+	if *csvFile != "" {
+		fmt.Println("Attestation mode enabled. Using CSV file:", *csvFile)
+
+		attestFileContent(*csvFile, *pmc)
+	} else {
+		fmt.Println("Web Service mode")
+		db, err := leveldb.OpenFile(cfg.DBPath, nil)
+		if err != nil {
+			log.Fatalf("fatal error opening db %s", err)
+		}
+
+		TAAttestationService := service.NewTrustAnchorAttestationService(cfg, db, pmc)
+		err = TAAttestationService.Run()
+		if err != nil {
+			fmt.Print(err.Error())
+		}
 	}
 }

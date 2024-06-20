@@ -11,7 +11,6 @@ import (
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
 	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
 	"github.com/decred/dcrd/dcrec/secp256k1/v4"
-	"github.com/planetmint/planetmint-go/app"
 	"github.com/planetmint/planetmint-go/lib"
 	machinetypes "github.com/planetmint/planetmint-go/x/machine/types"
 	"github.com/rddl-network/ta_attest/config"
@@ -54,15 +53,6 @@ func SetupGRPCConnection(cfg *config.Config) (conn *grpc.ClientConn, err error) 
 		grpc.WithTransportCredentials(insecure.NewCredentials()),
 		grpc.WithDefaultCallOptions(grpc.ForceCodec(codec.NewProtoCodec(interfaceRegistry).GRPCCodec())),
 	)
-}
-
-var libConfig *lib.Config
-
-func init() {
-	encodingConfig := app.MakeEncodingConfig()
-
-	libConfig = lib.GetConfig()
-	libConfig.SetEncodingConfig(encodingConfig)
 }
 
 func (pmc *PlanetmintClient) AttestTAPublicKeyHex(pubHexString string) error {

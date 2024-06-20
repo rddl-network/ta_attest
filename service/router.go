@@ -57,6 +57,7 @@ func (s *TAAService) postPubKey(c *gin.Context) {
 	pubKey := c.Param("pubkey")
 	_, err := hex.DecodeString(pubKey)
 	if err == nil {
+		fmt.Println(" pub key: " + pubKey)
 		err = s.pmc.AttestTAPublicKeyHex(pubKey)
 		if err == nil {
 			c.IndentedJSON(http.StatusOK, pubKey)
@@ -110,7 +111,7 @@ func (s *TAAService) createAccount(c *gin.Context) {
 	taStatus, err := s.pmc.GetTrustAnchorStatus(requestBody.MachineID)
 	if err != nil {
 		s.logger.Error("msg", "failed to fetch trust anchor status", "machineID", requestBody.MachineID)
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to fetch trust anchor status"})
+		c.JSON(http.StatusBadRequest, gin.H{"error": "failed to fetch trust anchor status"})
 		return
 	}
 
@@ -135,8 +136,8 @@ func (s *TAAService) createAccount(c *gin.Context) {
 
 	err = s.pmc.FundAccount(requestBody.PlmntAddress)
 	if err != nil {
-		s.logger.Error("msg", "failed to send funds", requestBody.PlmntAddress)
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to send funds"})
+		s.logger.Error("msg", "failed to send funds ", "address", requestBody.PlmntAddress, "error", err.Error())
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to send funds: " + err.Error()})
 		return
 	}
 
