@@ -4,24 +4,33 @@ import (
 	"fmt"
 
 	"github.com/gin-gonic/gin"
+	"github.com/rddl-network/go-utils/logger"
 	"github.com/rddl-network/ta_attest/config"
+	"github.com/syndtr/goleveldb/leveldb"
 )
 
 type TAAService struct {
 	cfg             *config.Config
 	router          *gin.Engine
+	db              *leveldb.DB
+	pmc             IPlanetmintClient
+	logger          logger.AppLogger
 	firmwareESP32   []byte
 	firmwareESP32C3 []byte
 }
 
-func NewTrustAnchorAttestationService(cfg *config.Config) *TAAService {
-	libConfig.SetChainID(cfg.PlanetmintChainID)
-	service := &TAAService{}
-	service.cfg = cfg
+func NewTrustAnchorAttestationService(cfg *config.Config, db *leveldb.DB, pmc IPlanetmintClient) *TAAService {
+	service := &TAAService{
+		db:     db,
+		cfg:    cfg,
+		pmc:    pmc,
+		logger: logger.GetLogger(cfg.LogLevel),
+	}
 
 	gin.SetMode(gin.ReleaseMode)
 	service.router = gin.New()
 	service.router.GET("/firmware/:mcu", service.getFirmware)
+	service.router.POST("/create-account", service.createAccount)
 	if service.cfg.TestnetMode {
 		service.router.POST("/register/:pubkey", service.postPubKey)
 	}
