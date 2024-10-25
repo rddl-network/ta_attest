@@ -39,8 +39,6 @@ func loadConfig(path string) (cfg *config.Config, err error) {
 		cfg.ServicePort = v.GetInt("SERVICE_PORT")
 		cfg.PlanetmintActor = v.GetString("PLANETMINT_ACTOR")
 		cfg.PlanetmintChainID = v.GetString("PLANETMINT_CHAIN_ID")
-		cfg.FirmwareESP32 = v.GetString("FIRMWARE_ESP32")
-		cfg.FirmwareESP32C3 = v.GetString("FIRMWARE_ESP32C3")
 		cfg.TestnetMode = v.GetBool("TESTNET_MODE")
 		cfg.DBPath = v.GetString("DB_PATH")
 		cfg.PlanetmintRPCHost = v.GetString("PLANETMINT_RPC_HOST")
