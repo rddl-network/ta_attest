@@ -32,8 +32,8 @@ func TestTestnetModeTrue(t *testing.T) {
 	s := service.NewTrustAnchorAttestationService(cfg, db, pmcMock)
 
 	routes := s.GetRoutes()
-	assert.Equal(t, 3, len(routes))
-	assert.Equal(t, "/register/:pubkey", routes[2].Path)
+	assert.Equal(t, 2, len(routes))
+	assert.Equal(t, "/register/:pubkey", routes[1].Path)
 }
 
 func TestTestnetModeFalse(t *testing.T) {
@@ -45,7 +45,7 @@ func TestTestnetModeFalse(t *testing.T) {
 	s := service.NewTrustAnchorAttestationService(cfg, db, pmcMock)
 
 	routes := s.GetRoutes()
-	assert.Equal(t, 2, len(routes))
+	assert.Equal(t, 1, len(routes))
 }
 
 func TestPostCreateAccount(t *testing.T) {

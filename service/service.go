@@ -10,13 +10,11 @@ import (
 )
 
 type TAAService struct {
-	cfg             *config.Config
-	router          *gin.Engine
-	db              *leveldb.DB
-	pmc             IPlanetmintClient
-	logger          logger.AppLogger
-	firmwareESP32   []byte
-	firmwareESP32C3 []byte
+	cfg    *config.Config
+	router *gin.Engine
+	db     *leveldb.DB
+	pmc    IPlanetmintClient
+	logger logger.AppLogger
 }
 
 func NewTrustAnchorAttestationService(cfg *config.Config, db *leveldb.DB, pmc IPlanetmintClient) *TAAService {
@@ -29,7 +27,6 @@ func NewTrustAnchorAttestationService(cfg *config.Config, db *leveldb.DB, pmc IP
 
 	gin.SetMode(gin.ReleaseMode)
 	service.router = gin.New()
-	service.router.GET("/firmware/:mcu", service.getFirmware)
 	service.router.POST("/create-account", service.createAccount)
 	if service.cfg.TestnetMode {
 		service.router.POST("/register/:pubkey", service.postPubKey)
@@ -39,17 +36,11 @@ func NewTrustAnchorAttestationService(cfg *config.Config, db *leveldb.DB, pmc IP
 }
 
 func (s *TAAService) Run() (err error) {
-	s.loadFirmwares()
 	err = s.startWebService()
 	if err != nil {
 		fmt.Print(err.Error())
 	}
 	return err
-}
-
-func (s *TAAService) loadFirmwares() {
-	s.firmwareESP32 = loadFirmware(s.cfg.FirmwareESP32)
-	s.firmwareESP32C3 = loadFirmware(s.cfg.FirmwareESP32C3)
 }
 
 func (s *TAAService) startWebService() error {

@@ -7,7 +7,6 @@ import (
 	"net/http"
 
 	"github.com/gin-gonic/gin"
-	pkiutil "github.com/rddl-network/go-utils/pki"
 	"github.com/rddl-network/go-utils/signature"
 	"github.com/rddl-network/ta_attest/types"
 	"github.com/syndtr/goleveldb/leveldb"
@@ -15,42 +14,6 @@ import (
 
 func (s *TAAService) GetRouter() *gin.Engine {
 	return s.router
-}
-
-func (s *TAAService) getFirmware(c *gin.Context) {
-	mcu := c.Param("mcu")
-	pkSource, err := pkiutil.GetRandomPrivateKey()
-	if err != nil {
-		c.IndentedJSON(http.StatusInternalServerError, gin.H{"error": fmt.Errorf("%w", err)})
-		return
-	}
-	privKey, pubKey, err := pkiutil.GenerateNewKeyPair(pkSource)
-	if err != nil {
-		c.IndentedJSON(http.StatusInternalServerError, gin.H{"error": fmt.Errorf("%w", err)})
-		return
-	}
-	var filename string
-	var firmwareBytes []byte
-	switch mcu {
-	case "esp32":
-		firmwareBytes = s.firmwareESP32
-		filename = "tasmota32-rddl.bin"
-	case "esp32c3":
-		firmwareBytes = s.firmwareESP32C3
-		filename = "tasmota32c3-rddl.bin"
-	default:
-		c.String(404, "Resource not found, Firmware not supported")
-		return
-	}
-
-	patchedFirmware := PatchFirmware(firmwareBytes, privKey)
-	ComputeAndSetFirmwareChecksum(patchedFirmware)
-
-	c.Header("Content-Disposition", "attachment; filename="+filename)
-	c.Data(http.StatusOK, "application/octet-stream", patchedFirmware)
-
-	fmt.Println(" pub key: ", hex.EncodeToString(pubKey.SerializeCompressed()))
-	_ = s.pmc.AttestTAPublicKey(pubKey)
 }
 
 func (s *TAAService) postPubKey(c *gin.Context) {
